@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
 
-# This is an example script (not prod ready) that demonstrates how we can (re)deploy 
-# a Spark Streaming cluster running on EMR in our CI system. 
+# This is an example script (not prod ready) that demonstrates how
+# a periodic "compaction" job could be run ontop of a Spark Streaming cluster. 
 
-# Since Spark Streaming clusters will be writing Delta Lake tables, and
-# Delta Lake does not support multi-cluster concurrent writes to S3 (due to an S3 limitation)
-# Deployments require "downtime" in the sense that we have to kill any streaming queries
-# currently running on the cluster, before we deploy the new code 
+# Streaming clusters often produce many small files in S3, so it's useful to
+# compact those files periodically (e.g. hourly, daily etc). And something similar
+# to this script could easily be run on a scheduled cadence.
 
-# TODOs: 
-# 1. Wait for existing queries to completely stop before deploying (avoids race conditions)
-# 2. Cleanups
+# Assuming we're compacting a Delta Lake table:
+# 1. This job could be as simple as just calling OPTIMIZE s3://... (see: https://docs.delta.io/latest/optimizations-oss.html#optimize-performance-with-file-management) running the compaction job concurrently
+# 2. Running the "compaction" job concurrently with other jobs on the cluster that might be writing to the same table is totally fine. 
+# Delta Lake supports concurrent writes to S3 so long write requests originate from the same cluster.
 
 export AWS_REGION="us-west-2"
 
-CLUSTER="j-2G8EI6V6CJ2A8"
+CLUSTER=$1
 JAR="s3://toy-emr-cluster-test/artifacts/scala-spark-playground-assembly-0.1.0-SNAPSHOT.jar"
 MAIN_CLASS="org.example.spark.Compactor"
 

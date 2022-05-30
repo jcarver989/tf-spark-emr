@@ -1,24 +1,22 @@
 #!/usr/bin/env bash
 
-# This is an example script (not prod ready) for how to (re)deploy 
-# a Spark Streaming job on EMR. Something similar could be used for automated deployments in a CI/CD pipeline 
+# This is an example script (not prod ready) that (re)deploys 
+# Spark Streaming queries running on EMR. Something similar could be used for automated deployments in a CI/CD pipeline 
 
-# This script:
-# 1. Kills all running steps on the cluster
-# 2. Starts a new Spark Streaming step on the cluster (presumably with the "new" code we want to deploy)
+# This script assumes the Spark cluster is writing to a Delta Lake table, which at the time of writing does not support
+# multi-cluster concurrent writes to S3 (without an external data store). 
 
-# Since Spark Streaming clusters will be writing Delta Lake tables, and
-# Delta Lake does not support multi-cluster concurrent writes to S3 (due to an S3 limitation)
-# Deployments require "downtime" in the sense that we have to kill any streaming queries
-# currently running on the cluster, before we deploy the new code 
+# Blue/green deployments aren't an option here (as that'd result in concurrent multi-cluster writes to S3). So instead we: 
+# 1. Keep the original cluster running
+# 2. Request to terminate all jobs running on the cluster
+# 3. Start the new job (with the updated code we're deploying)
 
 # TODOs: 
-# 1. Wait for existing queries to completely stop before deploying (avoids race conditions)
-# 2. Cleanups
+# - Wait for existing queries to completely stop before deploying (avoids race conditions)
 
 export AWS_REGION="us-west-2"
 
-CLUSTER="j-2G8EI6V6CJ2A8"
+CLUSTER=$1
 JAR="s3://toy-emr-cluster-test/artifacts/scala-spark-playground-assembly-0.1.0-SNAPSHOT.jar"
 MAIN_CLASS="org.example.spark.App"
 
