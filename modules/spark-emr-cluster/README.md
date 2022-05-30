@@ -31,6 +31,7 @@ module "example_cluster" {
     s3_path_to_cert = "s3://foo-bucket/certs.zip"
 }
 ```
+See [here](../../examples/spark-emr-cluster/) for a fully bootable example.
 
 ## Configuration
 See [variables.tf](./variables.tf) for a full list of configuration options.
