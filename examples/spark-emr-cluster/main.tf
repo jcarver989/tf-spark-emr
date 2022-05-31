@@ -19,6 +19,13 @@ module "toy_emr_cluster" {
   instance_type             = "m6g.xlarge"
   core_worker_count         = 2
 
+  bootstrap_action = [{
+    name = "Install Docker"
+    path = "s3://toy-emr-cluster-test/python/bootstrap.sh"
+    args = []
+  }]
+
+  docker_registry_urls = [aws_ecr_repository.ecr_repo.repository_url]
   encryption = {
     s3_kms_key      = aws_kms_key.bucket_key.arn
     cluster_kms_key = aws_kms_key.cluster_key.arn
@@ -53,7 +60,19 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "bucket_encryption
 }
 
 # =======
-# VPC  (A VPC with a private subnet + S3 gateway endpoint + KMS interface endpoint)
+# ECR
+# =======
+resource "aws_ecr_repository" "ecr_repo" {
+  name                 = "emr-ecr-repo"
+  image_tag_mutability = "MUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+}
+
+# =======
+# VPC  (A VPC with a private subnet + S3 gateway endpoint + KMS & ECR interface endpoints)
 # =======
 
 locals {
@@ -121,6 +140,29 @@ resource "aws_vpc_endpoint" "kms" {
     aws_security_group.vpc_endpoints.id
   ]
 }
+
+resource "aws_vpc_endpoint" "ecr_api" {
+  vpc_id              = aws_vpc.vpc.id
+  service_name        = "com.amazonaws.us-west-2.ecr.api"
+  vpc_endpoint_type   = "Interface"
+  private_dns_enabled = true
+  subnet_ids          = [aws_subnet.private.id]
+  security_group_ids = [
+    aws_security_group.vpc_endpoints.id
+  ]
+}
+
+resource "aws_vpc_endpoint" "ecr_dkr" {
+  vpc_id              = aws_vpc.vpc.id
+  service_name        = "com.amazonaws.us-west-2.ecr.dkr"
+  vpc_endpoint_type   = "Interface"
+  private_dns_enabled = true
+  subnet_ids          = [aws_subnet.private.id]
+  security_group_ids = [
+    aws_security_group.vpc_endpoints.id
+  ]
+}
+
 
 resource "aws_security_group" "vpc_endpoints" {
   vpc_id = aws_vpc.vpc.id
