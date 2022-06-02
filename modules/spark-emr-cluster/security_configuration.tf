@@ -6,9 +6,8 @@
 #   "EncryptionMode" : "SSE-KMS"
 #   "AwsKmsKey" : var.encryption.s3_kms_key
 # },
-# 
-# But this is unecessary if the bucket is already configured to use an AWS CMK for encryption
-# by default (which is what we assume here)
+#
+# But this isn't necessary if the bucket is already configured for default encryption using an AWS CMK (which is what we assume here)
 resource "aws_emr_security_configuration" "security_configuration" {
   name = "${var.name}-security-config"
 
@@ -20,7 +19,7 @@ resource "aws_emr_security_configuration" "security_configuration" {
       "AtRestEncryptionConfiguration" : {
         "LocalDiskEncryptionConfiguration" : {
           "EncryptionKeyProviderType" : "AwsKms",
-          "AwsKmsKey" : aws_kms_key.cluster_key.arn
+          "AwsKmsKey" : var.encryption.cluster_kms_key
         }
       },
 
@@ -33,5 +32,3 @@ resource "aws_emr_security_configuration" "security_configuration" {
     }
   })
 }
-
-

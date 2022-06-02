@@ -31,31 +31,18 @@ variable "instance_type" {
 }
 
 variable "instance_profile_id" {
-  type = string
+  type        = string
   description = "Instance profile for the cluster"
 }
 
 variable "instance_profile_role_arn" {
-  type = string
+  type        = string
   description = "Instance profile role arn for the cluster"
 }
 
 variable "core_worker_count" {
   type        = number
   description = "Number of core worker nodes in the cluster"
-}
-
-variable "tags" {
-  type = map(string)
-  default = {
-    "for-use-with-amazon-emr-managed-policies" = true
-  }
-}
-
-variable "service_role" {
-  type        = string
-  default     = "EMR_DefaultRole"
-  description = "EMR service role for the cluster"
 }
 
 variable "keep_alive" {
@@ -74,6 +61,7 @@ variable "encryption" {
   type = object({
     s3_kms_key      = string
     s3_path_to_cert = string
+    cluster_kms_key = string
   })
   description = "Required configuration to enable encryption at rest and in transit on the cluster"
 }
@@ -81,4 +69,9 @@ variable "encryption" {
 variable "s3_log_path" {
   type        = string
   description = "S3 location for EMR logs, should start with s3://..."
+}
+
+variable "tags" {
+  type    = map(string)
+  default = {}
 }

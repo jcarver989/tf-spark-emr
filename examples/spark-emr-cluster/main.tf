@@ -5,22 +5,23 @@
 # EMR Cluster (Setup for Spark Streaming)
 # =======
 module "toy_emr_cluster" {
-  source     = "../../modules/spark-emr-cluster"
-  name       = "test-cluster"
-  keep_alive = true # this keeps the cluster alive when it has no running steps (useful for Spark streaming)
+  source      = "../../modules/spark-emr-cluster"
+  name        = "test-cluster"
+  keep_alive  = true # this keeps the cluster alive when it has no running steps (useful for Spark streaming)
   s3_log_path = "s3://${aws_s3_bucket.test_bucket.bucket}/logs"
 
   vpc_id                    = aws_vpc.vpc.id
   subnet_ids                = [aws_subnet.private.id]
   egress_security_group_ids = [aws_security_group.vpc_endpoints.id]
 
-  instance_profile_id  = aws_iam_instance_profile.instance_profile.id
-  instance_profile_role_arn  = aws_iam_role.iam_emr_profile_role.arn
-  instance_type     = "m6g.xlarge"
-  core_worker_count = 2
+  instance_profile_id       = aws_iam_instance_profile.instance_profile.id
+  instance_profile_role_arn = aws_iam_role.iam_emr_profile_role.arn
+  instance_type             = "m6g.xlarge"
+  core_worker_count         = 2
 
   encryption = {
     s3_kms_key      = aws_kms_key.bucket_key.arn
+    cluster_kms_key = aws_kms_key.cluster_key.arn
 
     # For intstructions on generating certs for EMR, see:
     # https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-encryption-enable.html#emr-encryption-certificates
@@ -63,6 +64,11 @@ locals {
 resource "aws_kms_key" "bucket_key" {
   description = "key for toy-emr-cluster-test bucket"
 }
+
+resource "aws_kms_key" "cluster_key" {
+  description = "key for toy-emr-cluster-test bucket"
+}
+
 
 
 resource "aws_vpc" "vpc" {
@@ -177,7 +183,19 @@ resource "aws_iam_role_policy" "iam_emr_profile_policy" {
         "s3:*",
         "sdb:*",
         "sns:*",
-        "sqs:*"
+        "sqs:*",
+        "ecr:GetAuthorizationToken",
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:GetRepositoryPolicy",
+        "ecr:DescribeRepositories",
+        "ecr:ListImages",
+        "ecr:DescribeImages",
+        "ecr:BatchGetImage",
+        "ecr:GetLifecyclePolicy",
+        "ecr:GetLifecyclePolicyPreview",
+        "ecr:ListTagsForResource",
+        "ecr:DescribeImageScanFindings"
       ]
     }]
   })

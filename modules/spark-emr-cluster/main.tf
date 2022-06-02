@@ -7,7 +7,7 @@ resource "aws_emr_cluster" "cluster" {
   step_concurrency_level            = var.step_concurrency_level
   log_uri                           = var.s3_log_path
   security_configuration            = aws_emr_security_configuration.security_configuration.id
-  service_role                      = var.service_role
+  service_role                      = local.service_role
 
   ec2_attributes {
     subnet_ids                        = var.subnet_ids
@@ -26,7 +26,8 @@ resource "aws_emr_cluster" "cluster" {
     instance_count = var.core_worker_count
   }
 
-  tags = var.tags
+  tags = local.tags
+
   depends_on = [
     aws_kms_grant.kms_disk_grant,
     aws_kms_grant.kms_s3_grant
