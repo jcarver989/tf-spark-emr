@@ -19,7 +19,7 @@ module "toy_emr_cluster" {
   instance_type             = "m6g.xlarge"
   core_worker_count         = 2
 
-  bootstrap_action = [{
+  bootstrap_actions = [{
     name = "Install Docker"
     path = "s3://toy-emr-cluster-test/python/bootstrap.sh"
     args = []
