@@ -13,12 +13,15 @@
       "--conf",
       "spark.executorEnv.YARN_CONTAINER_RUNTIME_TYPE=docker",
       "--conf",
-      "spark.executorEnv.YARN_CONTAINER_RUNTIME_DOCKER_IMAGE=575767027669.dkr.ecr.us-west-2.amazonaws.com/emr-ecr-repo:pyspark",
+      "spark.executorEnv.YARN_CONTAINER_RUNTIME_DOCKER_IMAGE=<YOUR DOCKER IMAGE>",
       "--conf",
       "spark.yarn.appMasterEnv.YARN_CONTAINER_RUNTIME_TYPE=docker",
       "--conf",
-      "spark.yarn.appMasterEnv.YARN_CONTAINER_RUNTIME_DOCKER_IMAGE=575767027669.dkr.ecr.us-west-2.amazonaws.com/emr-ecr-repo:pyspark",
-      "s3://toy-emr-cluster-test/python/main.py"
+      "spark.yarn.appMasterEnv.YARN_CONTAINER_RUNTIME_DOCKER_IMAGE=<YOUR DOCKER IMAGE>",
+      "--conf",
+      "spark.ui.enabled=false",
+      "s3://toy-emr-cluster-test/python/main.py",
+      "-v"
     ]
   }
 ]
