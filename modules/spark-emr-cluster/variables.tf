@@ -71,6 +71,31 @@ variable "s3_log_path" {
   description = "S3 location for EMR logs, should start with s3://..."
 }
 
+
+variable "bootstrap_actions" {
+  type = list(object({
+    name = string
+    path = string
+    args = list(string)
+  }))
+
+  description = "Boostrap action that runs before any job steps. s3:// paths to scripts are supported. And if you're running Docker make sure to configure a bootstrap action that installs Docker on the master node, per: https://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-spark-docker.html"
+  default     = []
+}
+
+
+variable "trusted_ecr_registries" {
+  type        = list(string)
+  description = "List of trusted ECR registries, which may be used by the cluster to pull images for Docker-ized jobs. These should look like: <account>.dkr.ecr.<region>.amazonaws.com, and end in .com, .com/<repo-name>"
+  default     = []
+  validation {
+    condition = alltrue([
+      for e in var.trusted_ecr_registries : can(regex("amazonaws\\.com$", e))
+    ])
+    error_message = "ECR registry endpoints must end in .com, did you include the repo name by accident, e.g. .com/<repo-name>?"
+  }
+}
+
 variable "tags" {
   type    = map(string)
   default = {}
