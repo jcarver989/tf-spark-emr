@@ -31,31 +31,18 @@ variable "instance_type" {
 }
 
 variable "instance_profile_id" {
-  type = string
+  type        = string
   description = "Instance profile for the cluster"
 }
 
 variable "instance_profile_role_arn" {
-  type = string
+  type        = string
   description = "Instance profile role arn for the cluster"
 }
 
 variable "core_worker_count" {
   type        = number
   description = "Number of core worker nodes in the cluster"
-}
-
-variable "tags" {
-  type = map(string)
-  default = {
-    "for-use-with-amazon-emr-managed-policies" = true
-  }
-}
-
-variable "service_role" {
-  type        = string
-  default     = "EMR_DefaultRole"
-  description = "EMR service role for the cluster"
 }
 
 variable "keep_alive" {
@@ -74,6 +61,7 @@ variable "encryption" {
   type = object({
     s3_kms_key      = string
     s3_path_to_cert = string
+    cluster_kms_key = string
   })
   description = "Required configuration to enable encryption at rest and in transit on the cluster"
 }
@@ -81,4 +69,34 @@ variable "encryption" {
 variable "s3_log_path" {
   type        = string
   description = "S3 location for EMR logs, should start with s3://..."
+}
+
+
+variable "bootstrap_actions" {
+  type = list(object({
+    name = string
+    path = string
+    args = list(string)
+  }))
+
+  description = "Boostrap action that runs before any job steps. s3:// paths to scripts are supported. And if you're running Docker make sure to configure a bootstrap action that installs Docker on the master node, per: https://docs.aws.amazon.com/emr/latest/ReleaseGuide/emr-spark-docker.html"
+  default     = []
+}
+
+
+variable "trusted_ecr_registries" {
+  type        = list(string)
+  description = "List of trusted ECR registries, which may be used by the cluster to pull images for Docker-ized jobs. These should look like: <account>.dkr.ecr.<region>.amazonaws.com, and end in .com, .com/<repo-name>"
+  default     = []
+  validation {
+    condition = alltrue([
+      for e in var.trusted_ecr_registries : can(regex("amazonaws\\.com$", e))
+    ])
+    error_message = "ECR registry endpoints must end in .com, did you include the repo name by accident, e.g. .com/<repo-name>?"
+  }
+}
+
+variable "tags" {
+  type    = map(string)
+  default = {}
 }

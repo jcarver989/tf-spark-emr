@@ -3,7 +3,7 @@
 This directory contains a fully-bootable Terraform project that uses the [spark-emr-cluster module](../../modules/spark-emr-cluster/). At a high-level this example provisions (non-comprehensive): 
 
 - A VPC with a private subnet
-- VPC endpoints for: S3 (gateway) and KMS (interface)
+- VPC endpoints for: S3 (gateway) and KMS + ECR (interface)
 - A S3 bucket + KMS Key
 - An EMR cluster running Apache Spark in the private subnet
 

@@ -5,22 +5,30 @@
 # EMR Cluster (Setup for Spark Streaming)
 # =======
 module "toy_emr_cluster" {
-  source     = "../../modules/spark-emr-cluster"
-  name       = "test-cluster"
-  keep_alive = true # this keeps the cluster alive when it has no running steps (useful for Spark streaming)
+  source      = "../../modules/spark-emr-cluster"
+  name        = "test-cluster"
+  keep_alive  = true # this keeps the cluster alive when it has no running steps (useful for Spark streaming)
   s3_log_path = "s3://${aws_s3_bucket.test_bucket.bucket}/logs"
 
   vpc_id                    = aws_vpc.vpc.id
   subnet_ids                = [aws_subnet.private.id]
   egress_security_group_ids = [aws_security_group.vpc_endpoints.id]
 
-  instance_profile_id  = aws_iam_instance_profile.instance_profile.id
-  instance_profile_role_arn  = aws_iam_role.iam_emr_profile_role.arn
-  instance_type     = "m6g.xlarge"
-  core_worker_count = 2
+  instance_profile_id       = aws_iam_instance_profile.instance_profile.id
+  instance_profile_role_arn = aws_iam_role.iam_emr_profile_role.arn
+  instance_type             = "m6g.xlarge"
+  core_worker_count         = 2
 
+  bootstrap_actions = [{
+    name = "Install Docker"
+    path = "s3://toy-emr-cluster-test/python/bootstrap.sh"
+    args = []
+  }]
+
+  trusted_ecr_registries = [split("/", aws_ecr_repository.ecr_repo.repository_url)[0]]
   encryption = {
     s3_kms_key      = aws_kms_key.bucket_key.arn
+    cluster_kms_key = aws_kms_key.cluster_key.arn
 
     # For intstructions on generating certs for EMR, see:
     # https://docs.aws.amazon.com/emr/latest/ManagementGuide/emr-encryption-enable.html#emr-encryption-certificates
@@ -52,7 +60,19 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "bucket_encryption
 }
 
 # =======
-# VPC  (A VPC with a private subnet + S3 gateway endpoint + KMS interface endpoint)
+# ECR
+# =======
+resource "aws_ecr_repository" "ecr_repo" {
+  name                 = "emr-ecr-repo"
+  image_tag_mutability = "MUTABLE"
+
+  image_scanning_configuration {
+    scan_on_push = true
+  }
+}
+
+# =======
+# VPC  (A VPC with a private subnet + S3 gateway endpoint + KMS & ECR interface endpoints)
 # =======
 
 locals {
@@ -63,6 +83,11 @@ locals {
 resource "aws_kms_key" "bucket_key" {
   description = "key for toy-emr-cluster-test bucket"
 }
+
+resource "aws_kms_key" "cluster_key" {
+  description = "key for toy-emr-cluster-test bucket"
+}
+
 
 
 resource "aws_vpc" "vpc" {
@@ -115,6 +140,29 @@ resource "aws_vpc_endpoint" "kms" {
     aws_security_group.vpc_endpoints.id
   ]
 }
+
+resource "aws_vpc_endpoint" "ecr_api" {
+  vpc_id              = aws_vpc.vpc.id
+  service_name        = "com.amazonaws.us-west-2.ecr.api"
+  vpc_endpoint_type   = "Interface"
+  private_dns_enabled = true
+  subnet_ids          = [aws_subnet.private.id]
+  security_group_ids = [
+    aws_security_group.vpc_endpoints.id
+  ]
+}
+
+resource "aws_vpc_endpoint" "ecr_dkr" {
+  vpc_id              = aws_vpc.vpc.id
+  service_name        = "com.amazonaws.us-west-2.ecr.dkr"
+  vpc_endpoint_type   = "Interface"
+  private_dns_enabled = true
+  subnet_ids          = [aws_subnet.private.id]
+  security_group_ids = [
+    aws_security_group.vpc_endpoints.id
+  ]
+}
+
 
 resource "aws_security_group" "vpc_endpoints" {
   vpc_id = aws_vpc.vpc.id
@@ -177,7 +225,19 @@ resource "aws_iam_role_policy" "iam_emr_profile_policy" {
         "s3:*",
         "sdb:*",
         "sns:*",
-        "sqs:*"
+        "sqs:*",
+        "ecr:GetAuthorizationToken",
+        "ecr:BatchCheckLayerAvailability",
+        "ecr:GetDownloadUrlForLayer",
+        "ecr:GetRepositoryPolicy",
+        "ecr:DescribeRepositories",
+        "ecr:ListImages",
+        "ecr:DescribeImages",
+        "ecr:BatchGetImage",
+        "ecr:GetLifecyclePolicy",
+        "ecr:GetLifecyclePolicyPreview",
+        "ecr:ListTagsForResource",
+        "ecr:DescribeImageScanFindings"
       ]
     }]
   })
