@@ -9,20 +9,6 @@ resource "aws_emr_cluster" "cluster" {
   security_configuration            = aws_emr_security_configuration.security_configuration.id
   service_role                      = local.service_role
 
-  bootstrap_action {
-    name = "Install Docker"
-    path = "s3://toy-emr-cluster-test/python/bootstrap.sh"
-  }
-
-  # dynamic "bootstrap_action" {
-  #   for_each = var.bootstrap_action
-  #   content {
-  #     name = bootstrap_action.name
-  #     path = bootstrap_action.path
-  #     args = bootstrap_action.args
-  #   }
-  # }
-
   ec2_attributes {
     subnet_ids                        = var.subnet_ids
     emr_managed_master_security_group = aws_security_group.cluster_security_group.id
