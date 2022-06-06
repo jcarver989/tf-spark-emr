@@ -25,7 +25,7 @@ module "toy_emr_cluster" {
     args = []
   }]
 
-  docker_registry_urls = [aws_ecr_repository.ecr_repo.repository_url]
+  trusted_ecr_registries = [split("/", aws_ecr_repository.ecr_repo.repository_url)[0]]
   encryption = {
     s3_kms_key      = aws_kms_key.bucket_key.arn
     cluster_kms_key = aws_kms_key.cluster_key.arn
